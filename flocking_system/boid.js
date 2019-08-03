@@ -1,18 +1,21 @@
-
 class Boid {
     constructor(){
         this.position = createVector(random(30, width-30), random(30, height-30));
-        this.velocity = createVector(0, 0);
-        this.velocity.setMag(random(100));
+        this.velocity = createVector();
+        // velocity = p5.Vector.random2D();
+        this.velocity.setMag(random(2));
         this.acceleration = createVector();
-        this.mass = random(100, 400);
-        this.r = this.mass/50
-        this.g = 20;
-        this.g_strenght
+        this.mass = random(200, 800);
+        this.r = this.mass/80
+        this.g = 40;
+        this.g_strenght;
         this.g_total = 0;
         this.near_obj = 0;
         this.near_mass = 0;
+        this.alligned_mass = 0;
         this.max_mass = 0;
+        this.red_fact = 0.9999;
+        this.stroke = 255;
     }
 
     get_mass() {
@@ -23,7 +26,7 @@ class Boid {
         this.max_mass = m;
     }
 
-    reduce_velocity(reduction_factor=0.99999){
+    reduce_velocity(reduction_factor=0.999){
         this.velocity.mult(reduction_factor);
         this.acceleration.mult(reduction_factor);
     }
@@ -39,17 +42,21 @@ class Boid {
     }
 
     glow(){
-        console.log(this.max_mass);
-        let glow_str = map(this.near_mass, 0, this.max_mass*2, 0, 255);
+        let glow_str = map(this.near_mass, this.max_mass/100, this.max_mass*2, 0, 255);
         let r =random(100, glow_str);
-        let g = random(100,glow_str/2);
-        let b = random(100, glow_str/2);
+        let g = random(100,glow_str/4);
+        let b = random(100, glow_str/4);
+        // this.stroke = glow_str;
         fill(r , g, b, glow_str);
         noStroke();
-        circle(this.position.x, this.position.y, this.r*3*this.near_obj);
-        // strokeWeight(this.r*10);
-        // stroke(glow_str);
-        // point(this.position.x, this.position.y);
+        circle(this.position.x, this.position.y, this.r*2*this.near_obj);
+        if (this.alligned_mass > this.mass*8){
+          this.stroke = 0;
+        } else if (this.alligned_mass < this.mass*4){
+          this.stroke = 255-glow_str*2;
+        }
+        
+
         
     }
 
@@ -98,6 +105,7 @@ class Boid {
         this.g_total = 0;
         this.near_obj = 0;
         this.near_mass = 0;
+        this.alligned_mass = this.mass;
 
         let gravity = createVector();
         let steering = createVector();
@@ -107,7 +115,9 @@ class Boid {
                 this.position.y, 
                 other.position.x, 
                 other.position.y);
-            
+            if (d < this.r*3) {
+               this.alligned_mass += other.mass;
+            }
             if (d < near_obj_dst) {
                 this.near_obj++;
                 this.near_mass += other.mass;
@@ -121,7 +131,6 @@ class Boid {
                 }
             }
         }
-
 
 
         if (this.g_total > 0) {
@@ -138,12 +147,13 @@ class Boid {
     update() {
         this.position.add(this.velocity);
         this.velocity.add(this.acceleration);
-        this.reduce_velocity(0.99);
+        this.reduce_velocity(this.red_fact);
+      this.red_fact -= 0.0001;
     }
 
     show() {
         strokeWeight(this.r*2);
-        stroke(255);
+        stroke(this.stroke);
         point(this.position.x, this.position.y);
     }
 }
