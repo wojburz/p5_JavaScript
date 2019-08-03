@@ -3,11 +3,24 @@ class Boid {
     constructor(){
         this.position = createVector(random(30, width-30), random(30, height-30));
         this.velocity = createVector(0, 0);
-        this.velocity.setMag(random(0));
+        this.velocity.setMag(random(100));
         this.acceleration = createVector();
-        this.mass = random(10, 400);
+        this.mass = random(100, 400);
         this.r = this.mass/50
         this.g = 20;
+        this.g_strenght
+        this.g_total = 0;
+        this.near_obj = 0;
+        this.near_mass = 0;
+        this.max_mass = 0;
+    }
+
+    get_mass() {
+        return this.mass;
+    }
+
+    set_max_mass(m) {
+        this.max_mass = m;
     }
 
     reduce_velocity(reduction_factor=0.99999){
@@ -25,13 +38,28 @@ class Boid {
         this.r = r;
     }
 
+    glow(){
+        console.log(this.max_mass);
+        let glow_str = map(this.near_mass, 0, this.max_mass*2, 0, 255);
+        let r =random(100, glow_str);
+        let g = random(100,glow_str/2);
+        let b = random(100, glow_str/2);
+        fill(r , g, b, glow_str);
+        noStroke();
+        circle(this.position.x, this.position.y, this.r*3*this.near_obj);
+        // strokeWeight(this.r*10);
+        // stroke(glow_str);
+        // point(this.position.x, this.position.y);
+        
+    }
+
     get_gravity(other){
         let gravity_force = p5.Vector.sub(other.position, this.position);
         let distance = gravity_force.mag();
         // distance = constrain(distance, 5, 25);
         gravity_force.normalize();
-        let strength = (this.g * this.mass * other.mass) / (distance * distance);
-        gravity_force.mult(strength);
+        this.g_strength = (this.g * this.mass * other.mass) / (distance * distance);
+        gravity_force.mult(this.g_strength);
 
         if (distance <= (this.r + other.r)*2){
             gravity_force.normalize();
@@ -56,16 +84,20 @@ class Boid {
         gravity.add(allignment);
         // gravity.add(mouse_acc);
 
-        
+        this.glow();
 
         this.acceleration = gravity;
     }
 
     allign(boids) {
-        let gravity_perception = 1000000;
+        let gravity_perception = 100000;
         let flocking_preception = 10;
-        let g_total = 0;
+        let near_obj_dst = this.r*this.velocity.mag();
         let f_total = 0;
+
+        this.g_total = 0;
+        this.near_obj = 0;
+        this.near_mass = 0;
 
         let gravity = createVector();
         let steering = createVector();
@@ -75,10 +107,14 @@ class Boid {
                 this.position.y, 
                 other.position.x, 
                 other.position.y);
-
+            
+            if (d < near_obj_dst) {
+                this.near_obj++;
+                this.near_mass += other.mass;
+            }
             if (other != this && d < gravity_perception){
                 gravity.add(this.get_gravity(other));
-                g_total++;
+                this.g_total++;
                 if (d < flocking_preception){
                     steering.add(other.velocity);
                     f_total++;
@@ -88,8 +124,8 @@ class Boid {
 
 
 
-        if (g_total > 0) {
-            gravity.div(g_total);
+        if (this.g_total > 0) {
+            gravity.div(this.g_total);
             gravity.sub(this.velocity);
         }
         if (f_total > 0) {
@@ -102,7 +138,7 @@ class Boid {
     update() {
         this.position.add(this.velocity);
         this.velocity.add(this.acceleration);
-        this.reduce_velocity(0.8);
+        this.reduce_velocity(0.99);
     }
 
     show() {
