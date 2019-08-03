@@ -1,11 +1,11 @@
 class Boid {
     constructor(){
         this.position = createVector(random(30, width-30), random(30, height-30));
-        this.velocity = createVector();
+        this.velocity = p5.Vector.random2D();
         // velocity = p5.Vector.random2D();
-        this.velocity.setMag(random(2));
+        this.velocity.setMag(random(4));
         this.acceleration = createVector();
-        this.mass = random(200, 800);
+        this.mass = random(100, 800);
         this.r = this.mass/80
         this.g = 40;
         this.g_strenght;
@@ -17,6 +17,8 @@ class Boid {
         this.red_fact = 0.9999;
         this.stroke = 255;
         this.is_black_hole = false;
+        this.is_primal = false;
+        this.absorbtion = 0;
     }
 
     get_mass() {
@@ -55,10 +57,10 @@ class Boid {
         }
     }
 
-    glow(){
-        let glow_radius = this.r*2*this.near_obj
+    glow(power = 1){
+        let glow_radius = this.r*2*this.near_obj*power;
         let glow_str = map(this.near_mass, this.max_mass/100, this.max_mass*2, 0, 255);
-
+        // glow_str += power;
         let r =map(noise(glow_radius/1000), 0, 1, 100, 255);
         let g = map(noise(glow_radius), 0, 1, 100, 255);
         let b = map(noise(glow_str), 0, 1, 100, 255);
@@ -66,15 +68,16 @@ class Boid {
         fill(r , g, b, glow_str**0.4);
         noStroke();
         circle(this.position.x, this.position.y, glow_radius);
-        if (this.alligned_mass > this.mass*8){
+        if (this.alligned_mass > this.mass*20){
           this.stroke = 0;
-          if (this.alligned_mass > 0.99 * this.near_mass){
+          if (this.alligned_mass > 0.999999 * this.near_mass){
             // this.red_fact = 0;
             this.r = this.mass/1000;
             this.is_black_hole = true;
+            this.is_primal = true;
           }
         } else {
-          this.stroke = glow_str*2+70;
+          this.stroke = 255-glow_str*2;
         }
         // if (this.alligned_mass < this.mass*4)
 
@@ -100,21 +103,25 @@ class Boid {
         let result = this.allign(boids)
         let allignment = result[0];
         let gravity = result[1];
-        
-        // let x_factor = map(mouseX, 0, width, -20, 20);
-        // let y_factor = map(mouseY, 0, height, -20, 20);
-        // let mouse_acc = createVector(x_factor, y_factor);
-        // gravity_force.div(this.mass);
-        // mouse_acc.div(this.mass);
+
         allignment.div(this.mass);
         gravity.div(this.mass);
 
         gravity.add(allignment);
-        // gravity.add(mouse_acc);
-
-        this.glow();
-
-        this.acceleration = gravity;
+        
+        if (this.is_black_hole) {
+            if (this.absorbtion > 0){
+                this.glow(this.absorbtion/10);
+            }
+            this.absorbtion--;
+            this.stroke = 0;
+            this.acceleration.mult(0);
+        } else { 
+            this.glow();
+            this.acceleration = gravity;
+        }
+        
+        
     }
 
     allign(boids) {
@@ -144,10 +151,10 @@ class Boid {
                     this.set_mass(other.get_mass());
                 // this.red_fact = 0;
                     this.is_black_hole = true;
+                    this.absorbtion = 100;
                 }
             }
-            if (d < near_obj_dst) {
-                
+            if (other != this && d < near_obj_dst) {
                 this.near_obj++;
                 this.near_mass += other.mass;
             }
@@ -182,7 +189,11 @@ class Boid {
             if (this.red_fact > 0.1){
                 this.red_fact -= 0.0001;
             }
+        } else {
+            this.stroke = 0;
+            this.r = this.mass/1000;
         }
+        
     }
 
     show() {
