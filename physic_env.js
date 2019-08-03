@@ -15,6 +15,7 @@ class Point {
       this.x_loss_factor = 4;
       this.y_loss_factor = 4;
       this.destruction = false;
+      this.loses_enabled = true;
       
     }
   
@@ -27,6 +28,10 @@ class Point {
         this.loss = l;
         this.x_loss_factor = x_f;
         this.y_loss_factor = y_f;
+    }
+
+    enable_loses(l_enabled){
+        this.losses_enabled = l_enabled;
     }
   
     set_velocity(x_vel, y_vel) {
@@ -139,7 +144,10 @@ class Point {
     move() {
       this.accelerate();
       this.bounce();
-      this.losses();
+      if (this.loses_enabled === true){
+        this.losses();
+        this.loss += 0.00002;
+      }
       // this.check_if_stopped();
       if (!this.stopped_x) {
         this.x += (this.velocity[0]);
@@ -147,7 +155,6 @@ class Point {
       if (!this.stopped_y) {
         this.y += (this.velocity[1]);
       }
-      this.loss += 0.00002;
       this.decrease();
   
   
@@ -161,17 +168,18 @@ class Point {
 
 //CONFIGURATION DATA
 let init_mass_range = [10,100];
-let points_num = 10;
+let points_num = 100;
 let gravity = 0;
-let width = 1200;
+let width = 800;
 let height = 800;
 let x_velocity_range = [10, 10];
 let y_velocity_range = [10, 10];
-let air_resistance = 0.0001;
+let air_resistance = 0;
 let x_resist_factor = 4;
 let y_resist_factor = 4;
-let clear_background = false;
-let destruction = true;
+let clear_background = true;
+let destruction = false;
+let losses_enabled = false;
 //------------------------------
   
 
@@ -182,6 +190,7 @@ let destruction = true;
       p.set_gravity(gravity);
       p.set_resistance_config(air_resistance, x_resist_factor, y_resist_factor);
       p.set_destruction(destruction);
+      p.enable_loses(losses_enabled);
       p.set_borders(width, height);
       p.set_velocity(random(x_velocity_range[0], x_velocity_range[1]), random(y_velocity_range[0], y_velocity_range[1]));
       return p;
