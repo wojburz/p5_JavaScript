@@ -16,6 +16,7 @@ class Boid {
         this.max_mass = 0;
         this.red_fact = 0.9999;
         this.stroke = 255;
+        this.is_black_hole = false;
     }
 
     get_mass() {
@@ -36,26 +37,46 @@ class Boid {
         this.position.y = y;
     }
 
+    add_mass(m) {
+        this.mass += m;
+        if (this.is_black_hole) {
+            this.r = this.mass/1000;
+        } else {
+            this.r = this.mass/80;
+        }
+    }
+
     set_mass(m, r=this.r) {
         this.mass = m;
-        this.r = r;
+        if (this.is_black_hole) {
+            this.r = this.mass/1000;
+        } else {
+            this.r = this.mass/80;
+        }
     }
 
     glow(){
+        let glow_radius = this.r*2*this.near_obj
         let glow_str = map(this.near_mass, this.max_mass/100, this.max_mass*2, 0, 255);
-        let r =random(100, glow_str);
-        let g = random(100,glow_str/4);
-        let b = random(100, glow_str/4);
+
+        let r =map(noise(glow_radius/1000), 0, 1, 100, 255);
+        let g = map(noise(glow_radius), 0, 1, 100, 255);
+        let b = map(noise(glow_str), 0, 1, 100, 255);
         // this.stroke = glow_str;
-        fill(r , g, b, glow_str);
+        fill(r , g, b, glow_str**0.4);
         noStroke();
-        circle(this.position.x, this.position.y, this.r*2*this.near_obj);
+        circle(this.position.x, this.position.y, glow_radius);
         if (this.alligned_mass > this.mass*8){
           this.stroke = 0;
-        } else if (this.alligned_mass < this.mass*4){
-          this.stroke = 255-glow_str*2;
+          if (this.alligned_mass > 0.99 * this.near_mass){
+            // this.red_fact = 0;
+            this.r = this.mass/1000;
+            this.is_black_hole = true;
+          }
+        } else {
+          this.stroke = glow_str*2+70;
         }
-        
+        // if (this.alligned_mass < this.mass*4)
 
         
     }
@@ -117,8 +138,16 @@ class Boid {
                 other.position.y);
             if (d < this.r*3) {
                this.alligned_mass += other.mass;
+               if (other != this && other.is_black_hole && !this.is_black_hole){
+                    this.set_position(other.position.x, other.position.y);
+                    other.add_mass(this.mass);
+                    this.set_mass(other.get_mass());
+                // this.red_fact = 0;
+                    this.is_black_hole = true;
+                }
             }
             if (d < near_obj_dst) {
+                
                 this.near_obj++;
                 this.near_mass += other.mass;
             }
@@ -133,6 +162,7 @@ class Boid {
         }
 
 
+
         if (this.g_total > 0) {
             gravity.div(this.g_total);
             gravity.sub(this.velocity);
@@ -145,10 +175,14 @@ class Boid {
     }
 
     update() {
-        this.position.add(this.velocity);
-        this.velocity.add(this.acceleration);
-        this.reduce_velocity(this.red_fact);
-      this.red_fact -= 0.0001;
+        if (!this.is_black_hole){
+            this.position.add(this.velocity);
+            this.velocity.add(this.acceleration);
+            this.reduce_velocity(this.red_fact);
+            if (this.red_fact > 0.1){
+                this.red_fact -= 0.0001;
+            }
+        }
     }
 
     show() {
@@ -156,4 +190,28 @@ class Boid {
         stroke(this.stroke);
         point(this.position.x, this.position.y);
     }
+}
+
+class Star {
+    constructor(width, height, off) {
+        if (random(100) > 70){
+            this.x = map(noise(off/random(0,1)), 0, 1, 0, width);
+            this.y = map(noise((off/random(0,1))), 0, 1, height/2-200, height/2+200);
+        } else {
+            this.x = random(width);
+            this.y = random(height);
+        }
+    }
+
+    show() {
+        if (random(100) > 90){
+            strokeWeight(map(noise(this.x*this.y/1000), 0, 1, 1, 3));
+            stroke(random(100,150));
+        } else {
+            strokeWeight(1);
+            stroke(100);
+        }
+        point(this.x, this.y);
+    }
+
 }

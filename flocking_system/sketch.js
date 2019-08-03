@@ -1,12 +1,22 @@
 let width = 1400;
 let height = 700;
-let boids_nr = 5;
+let boids_nr = 25;
 let max_mass = 0;
+
+var locked = true;
+var boid, curr_mass;
+
+var stars = []
 
 const flock = [];
 
 function setup() {
     createCanvas(width, height);
+
+    for (let j = 0 ; j < 1000 ; j++){
+        stars.push(new Star(width,height, j));
+    }
+    
     for (let i = 0 ; i < boids_nr ; i++) {
         flock.push(new Boid());
         max_mass += flock[i].get_mass();
@@ -17,6 +27,12 @@ function setup() {
 
 function draw() {
     background(0);
+
+    for (let star of stars) {
+        star.show();
+    }
+
+    curr_mass += 100;
     // translate(width, height);
     // rotateX(radians(45));
     for (let i = 0 ; i < boids_nr ; i++) {
@@ -31,29 +47,18 @@ function draw() {
     }
 }
 
-var boid, curr_mass;
-var locked = true;
 function mousePressed() {
-  if (locked === true) {
+    curr_mass = 0;
     locked = false;
     boid = new Boid();
-    boid.set_position(mouseX, mouseY);
-  } else {
-    curr_mass = boid.get_mass();
-    curr_mass+= 100;
-    boid.set_mass(curr_mass);
-  }
-}
-
-function mouseDragged() {
-  if (!locked) {
-    curr_mass += mouseY;
-  }
+    flock.push(boid);
 }
 
 function mouseReleased() {
-  max_mass += boid.get_mass();
-  flock.push(boid);
-  locked = true;
-  boids_nr++;
+    flock[boids_nr].set_position(mouseX, mouseY);
+
+    flock[boids_nr].set_mass(curr_mass);
+    max_mass += curr_mass;
+    locked = true;
+    boids_nr++;
 }
