@@ -168,8 +168,9 @@ class Point {
 
 //CONFIGURATION DATA
 let init_mass_range = [10,100];
-let points_num = 100;
-let gravity = 0;
+let size_range = [10, 20];
+let points_num = 200;
+let gravity = 0.0;
 let width = 800;
 let height = 800;
 let x_velocity_range = [10, 10];
@@ -177,7 +178,7 @@ let y_velocity_range = [10, 10];
 let air_resistance = 0;
 let x_resist_factor = 4;
 let y_resist_factor = 4;
-let clear_background = true;
+let clear_background = false;
 let destruction = false;
 let losses_enabled = false;
 //------------------------------
@@ -186,7 +187,7 @@ let losses_enabled = false;
 
 
   function new_point(){
-      p = new Point(random(50, width-50), random(50, height-50), random(20, 60), random(init_mass_range[0],init_mass_range[1]));
+      p = new Point(random(50, width-50), random(50, height-50), random(size_range[0], size_range[1]), random(init_mass_range[0],init_mass_range[1]));
       p.set_gravity(gravity);
       p.set_resistance_config(air_resistance, x_resist_factor, y_resist_factor);
       p.set_destruction(destruction);
