@@ -1,6 +1,6 @@
 let width = 1400;
 let height = 700;
-let boids_nr = 60;
+let boids_nr = 40;
 let max_mass = 0;
 
 var locked = true;
@@ -13,7 +13,7 @@ const flock = [];
 function setup() {
     createCanvas(width, height);
 
-    for (let j = 0 ; j < 3000 ; j++){
+    for (let j = 0 ; j < 500 ; j++){
         stars.push(new Star(width,height, j));
     }
     
@@ -42,6 +42,7 @@ function draw() {
             flock[i].set_mass(100, 5);
         }
         flock[i].flock(flock);
+        // flock[i].check_if_outside(width, height);
         flock[i].update();
         flock[i].show();
     }

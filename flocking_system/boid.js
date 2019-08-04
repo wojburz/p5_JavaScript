@@ -3,9 +3,9 @@ class Boid {
         this.position = createVector(random(30, width-30), random(30, height-30));
         this.velocity = p5.Vector.random2D();
         // velocity = p5.Vector.random2D();
-        this.velocity.setMag(random(4));
+        this.velocity.setMag(random(10));
         this.acceleration = createVector();
-        this.mass = random(100, 800);
+        this.mass = random(200, 800);
         this.r = this.mass/80
         this.g = 40;
         this.g_strenght;
@@ -59,6 +59,9 @@ class Boid {
 
     glow(power = 1){
         let glow_radius = this.r*2*this.near_obj*power;
+        if (this.is_black_hole){
+            glow_radius = this.r*power;
+        }
         let glow_str = map(this.near_mass, this.max_mass/100, this.max_mass*2, 0, 255);
         // glow_str += power;
         let r =map(noise(glow_radius/1000), 0, 1, 100, 255);
@@ -70,7 +73,7 @@ class Boid {
         circle(this.position.x, this.position.y, glow_radius);
         if (this.alligned_mass > this.mass*20){
           this.stroke = 0;
-          if (this.alligned_mass > 0.999999 * this.near_mass){
+          if (this.alligned_mass > 0.999999 * this.near_mass && !this.is_black_hole){
             // this.red_fact = 0;
             this.r = this.mass/1000;
             this.is_black_hole = true;
@@ -113,11 +116,10 @@ class Boid {
             if (this.absorbtion > 0){
                 this.glow(this.absorbtion/10);
             }
-            this.absorbtion--;
             this.stroke = 0;
             this.acceleration.mult(0);
         } else { 
-            this.glow();
+            this.glow(this.mass/1000);
             this.acceleration = gravity;
         }
         
@@ -146,6 +148,7 @@ class Boid {
             if (d < this.r*3) {
                this.alligned_mass += other.mass;
                if (other != this && other.is_black_hole && !this.is_black_hole){
+                    other.absorbtion += 20;
                     this.set_position(other.position.x, other.position.y);
                     other.add_mass(this.mass);
                     this.set_mass(other.get_mass());
@@ -181,7 +184,23 @@ class Boid {
         return [steering, gravity];
     }
 
+    check_if_outside(width, height) {
+        if (this.position.x > width) {
+            this.position.x = 0;
+        }
+        if (this.position.x < 0) {
+            this.position.x = width;
+        }
+        if (this.position.y > height) {
+            this.position.y = 0;
+        }
+        if (this.position.y < 0) {
+            this.position.y = height;
+        }
+    }
+
     update() {
+        this.absorbtion -= 1;
         if (!this.is_black_hole){
             this.position.add(this.velocity);
             this.velocity.add(this.acceleration);
