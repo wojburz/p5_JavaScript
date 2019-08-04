@@ -1,5 +1,5 @@
-let width = 1400;
-let height = 700;
+let width = 1200;
+let height = 600;
 let boids_nr = 80;
 let max_mass = 0;
 
@@ -11,6 +11,8 @@ var stars = []
 const flock = [];
 
 function setup() {
+    width = windowWidth;
+    height = windowHeight;
     createCanvas(width, height);
 
     for (let j = 0 ; j < 500 ; j++){
