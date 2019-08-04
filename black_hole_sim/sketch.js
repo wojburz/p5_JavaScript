@@ -1,6 +1,6 @@
 let width = 1400;
 let height = 700;
-let boids_nr = 40;
+let boids_nr = 80;
 let max_mass = 0;
 
 var locked = true;
@@ -18,7 +18,7 @@ function setup() {
     }
     
     for (let i = 0 ; i < boids_nr ; i++) {
-        flock.push(new Boid());
+        flock.push(new Boid(random(400, 1000)));
         max_mass += flock[i].get_mass();
     }
 
@@ -39,7 +39,7 @@ function draw() {
         flock[i].set_max_mass(max_mass);
         if (i === 0){
             flock[i].set_position(mouseX, mouseY);
-            flock[i].set_mass(100, 5);
+            flock[i].set_mass(1000);
         }
         flock[i].flock(flock);
         // flock[i].check_if_outside(width, height);

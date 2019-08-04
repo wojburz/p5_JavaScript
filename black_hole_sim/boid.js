@@ -1,12 +1,12 @@
 class Boid {
-    constructor(){
+    constructor(max_mass=800){
         this.position = createVector(random(30, width-30), random(30, height-30));
         this.velocity = p5.Vector.random2D();
         // velocity = p5.Vector.random2D();
         this.velocity.setMag(random(10));
         this.acceleration = createVector();
-        this.mass = random(200, 800);
-        this.r = this.mass/80
+        this.mass = random(max_mass/20, max_mass);
+        this.r = this.recalculate_radius();
         this.g = 40;
         this.g_strenght;
         this.g_total = 0;
@@ -29,6 +29,16 @@ class Boid {
         this.max_mass = m;
     }
 
+    recalculate_radius(bh_div=0.2, natural_div=0.8, bh_dens=1000, nat_dens=50) {
+        let new_r;
+        if (this.is_black_hole) {
+            new_r = 0.01*(this.mass**bh_div)/(bh_dens*bh_dens*bh_dens);
+        } else {
+            new_r = (this.mass**natural_div)/nat_dens;
+        }
+        return new_r;
+    }
+
     reduce_velocity(reduction_factor=0.999){
         this.velocity.mult(reduction_factor);
         this.acceleration.mult(reduction_factor);
@@ -41,43 +51,40 @@ class Boid {
 
     add_mass(m) {
         this.mass += m;
-        if (this.is_black_hole) {
-            this.r = this.mass/1000;
-        } else {
-            this.r = this.mass/80;
-        }
+        this.r = this.recalculate_radius();
     }
 
     set_mass(m, r=this.r) {
         this.mass = m;
-        if (this.is_black_hole) {
-            this.r = this.mass/1000;
-        } else {
-            this.r = this.mass/80;
-        }
+        this.r = this.recalculate_radius();
     }
 
-    glow(power = 1){
+    glow(power = 1, boids = false){
         let glow_radius = this.r*2*this.near_obj*power;
         if (this.is_black_hole){
-            glow_radius = this.r*power;
+            glow_radius = this.r*power*this.mass/200;
         }
         let glow_str = map(this.near_mass, this.max_mass/100, this.max_mass*2, 0, 255);
         // glow_str += power;
-        let r =map(noise(glow_radius/1000), 0, 1, 100, 255);
-        let g = map(noise(glow_radius), 0, 1, 100, 255);
-        let b = map(noise(glow_str), 0, 1, 100, 255);
+        let r =map(noise(glow_radius/10), 0, 1, 100, 255);
+        let g = map(noise(glow_radius/300), 0, 1, 100, 255);
+        let b = map(noise(glow_radius/100), 0, 1, 100, 255);
         // this.stroke = glow_str;
-        fill(r , g, b, glow_str**0.4);
+        fill(r , g, b, glow_str/(0.15*glow_str));
         noStroke();
-        circle(this.position.x, this.position.y, glow_radius);
+        circle(this.position.x, this.position.y, glow_radius/2);
         if (this.alligned_mass > this.mass*20){
           this.stroke = 0;
-          if (this.alligned_mass > 0.999999 * this.near_mass && !this.is_black_hole){
+          if ((this.alligned_mass > this.g * this.mass) && !this.is_black_hole){
             // this.red_fact = 0;
-            this.r = this.mass/1000;
             this.is_black_hole = true;
             this.is_primal = true;
+            if (boids) {
+                this.absorbtion = 100;
+                this.switch_gravity(boids, -40*100*this.near_mass);
+            }
+            // this.g = -100;
+            this.r = this.recalculate_radius();
           }
         } else {
           this.stroke = 255-glow_str*2;
@@ -102,6 +109,12 @@ class Boid {
         return gravity_force;
     }
 
+    switch_gravity(boids, new_g) {
+        for (let boid of boids) {
+            boid.g = new_g;
+        }
+    }
+
     flock(boids) {
         let result = this.allign(boids)
         let allignment = result[0];
@@ -114,14 +127,23 @@ class Boid {
         
         if (this.is_black_hole) {
             if (this.absorbtion > 0){
-                this.glow(this.absorbtion/10);
+                // if (this.absorbtion === 100) {
+                    // gravity.mult(-1);
+                    // this.switch_gravity(boids, -40);
+                // } else 
+                if (this.absorbtion === 10) {
+                    // gravity.mult(-1);
+                    this.switch_gravity(boids, 40);
+                }
+                this.glow(this.absorbtion/10, boids);
+            } else {
             }
             this.stroke = 0;
-            this.acceleration.mult(0);
+            this.acceleration.mult(1);
         } else { 
             this.glow(this.mass/1000);
-            this.acceleration = gravity;
         }
+        this.acceleration = gravity;
         
         
     }
@@ -129,7 +151,9 @@ class Boid {
     allign(boids) {
         let gravity_perception = 100000;
         let flocking_preception = 10;
-        let near_obj_dst = this.r*this.velocity.mag();
+        // let near_obj_dst = this.r*this.velocity.mag();
+        let near_obj_dst = this.r*this.velocity.mag()*this.acceleration.mag();
+
         let f_total = 0;
 
         this.g_total = 0;
@@ -145,7 +169,7 @@ class Boid {
                 this.position.y, 
                 other.position.x, 
                 other.position.y);
-            if (d < this.r*3) {
+            if (d < other.r*2) {
                this.alligned_mass += other.mass;
                if (other != this && other.is_black_hole && !this.is_black_hole){
                     other.absorbtion += 20;
@@ -154,7 +178,9 @@ class Boid {
                     this.set_mass(other.get_mass());
                 // this.red_fact = 0;
                     this.is_black_hole = true;
+                    this.r = this.recalculate_radius();
                     this.absorbtion = 100;
+
                 }
             }
             if (other != this && d < near_obj_dst) {
